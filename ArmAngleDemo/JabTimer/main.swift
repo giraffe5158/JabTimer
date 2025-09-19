@@ -16,15 +16,8 @@ func angleAtB(_ a: CGPoint, _ b: CGPoint, _ c: CGPoint) -> CGFloat {
 }
 
 func syncLoadFirstVideoTrack(from asset: AVURLAsset) -> AVAssetTrack? {
-    // Bridge the async API to sync for scripting
-    let sema = DispatchSemaphore(value: 0)
-    var out: AVAssetTrack?
-    Task {
-        out = try? await asset.loadTracks(withMediaType: .video).first
-        sema.signal()
-    }
-    sema.wait()
-    return out
+    // Use synchronous track access for script simplicity  
+    return asset.tracks(withMediaType: AVMediaType.video).first
 }
 
 // ---- resolve input/output paths ----
@@ -46,12 +39,12 @@ defer { try? outHandle.close() }
 
 func writeLine(_ s: String) {
     if let data = (s + "\n").data(using: .utf8) {
-        try? outHandle.seekToEnd()
-        try? outHandle.write(contentsOf: data)
+        _ = try? outHandle.seekToEnd()
+        _ = try? outHandle.write(contentsOf: data)
     }
 }
 
-// ---- load asset & track (modern API) ----
+// ---- load asset & track ----
 let asset = AVURLAsset(url: videoURL)
 guard let track = syncLoadFirstVideoTrack(from: asset) else {
     fputs("❌ No video track found.\n", stderr)
